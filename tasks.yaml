@@ -1,0 +1,94 @@
+# Task List: Sequential Build Plan
+# Execute one-by-one. Dependencies enforced. Update execution_trace.md after each.
+
+tasks:
+  - id: T01
+    title: Project Setup & Boilerplate
+    depends_on: []
+    description: Initialize repo structure, deps, env setup.
+    execution_prompt: |
+      Initialize Next.js 15 project with Tailwind/Shadcn/Zustand/tRPC.
+      Structure:
+      - app/ (pages: dashboard.tsx)
+      - components/ (panels: LeftPanel, CenterTabs, RightPreview, BottomTrace)
+      - lib/agents.ts (mock pipeline)
+      - prisma/schema.prisma (Supabase-like)
+      Add .env.example, README.md linking to PRD/plan.
+      Commit: "feat: T01 - Project setup"
+    review_prompt: |
+      Verify: package.json has deps, folder structure matches plan.md, no errors on npm run dev.
+
+  - id: T02
+    title: Core UI Components (Panels)
+    depends_on: [T01]
+    description: Build dashboard skeleton.
+    execution_prompt: |
+      Implement responsive layout per plan.md:
+      - Left: Idea textarea + Critique display (cards).
+      - Center: Tabs (Refine: dropdowns for tech/complexity; Settings).
+      - Right: Output previews (MD/YAML editors with Ace).
+      - Bottom: Trace viewer (editable MD).
+      Use Shadcn components. State in Zustand store.
+      Commit: "feat: T02 - Dashboard UI skeleton"
+    review_prompt: |
+      Test: Responsive? Dropdowns work? Previews render MD/YAML? Aligns with PRD personas.
+
+  - id: T03
+    title: Backend API Endpoints
+    depends_on: [T02]
+    description: tRPC routes for agents.
+    execution_prompt: |
+      Setup tRPC router:
+      - critique(input: idea) ? mock Critic output.
+      - refine(selections) ? mock suggestions.
+      - generate(idea+selections) ? mock outputs.
+      - export() ? zip endpoints.
+      Connect Zustand to API calls.
+      Commit: "feat: T03 - API layer"
+    review_prompt: |
+      Verify: Endpoints respond? Errors handled? Matches agent pipeline in plan.md.
+
+  - id: T04
+    title: Agents Pipeline (LangGraph)
+    depends_on: [T03]
+    description: Real LLM integration.
+    execution_prompt: |
+      Install LangGraph/LiteLLM.
+      Implement pipeline in lib/agents.ts:
+      1. Critic: Prompt for market analysis/competitors/risks.
+      2. Refiner: Generate dropdown options from critique.
+      3. Spec Gen: Build PRD/plan/tasks using templates.
+      4. Reviewer: Audit outputs.
+      Wire to /generate endpoint. Use Claude/Gemini.
+      Commit: "feat: T04 - Multi-agent pipeline"
+    review_prompt: |
+      Mock test: Pipeline runs end-to-end? Outputs structured? No hallucinations?
+
+  - id: T05
+    title: Outputs Generation & Export
+    depends_on: [T04]
+    description: Generate/export package.
+    execution_prompt: |
+      In /generate: Produce MD/YAML files per PRD (master_prompt.md etc.).
+      Export: JSZip for download (include all generated files).
+      Add preview editors (react-markdown for MD, yaml for YAML).
+      Commit: "feat: T05 - Outputs & export"
+    review_prompt: |
+      Test export: Zip contains all files? Previews editable? Matches user_instructions.md.
+
+  - id: T06
+    title: Trace Integration, Auth, Polish
+    depends_on: [T05]
+    description: Production readiness.
+    execution_prompt: |
+      - Zustand persist trace/versions.
+      - Add Clerk auth.
+      - i18n (en/ar).
+      - Tests (80% coverage: UI, API).
+      - Deploy scripts (Vercel/Supabase).
+      Update README with full usage.
+      Commit: "feat: T06 - Production polish"
+    review_prompt: |
+      E2E: Full flow works? Secure? Arabic UI? Ready for users per PRD metrics.
+
+# Completion: MVP Done. Next: Scale (multi-project, real search).
