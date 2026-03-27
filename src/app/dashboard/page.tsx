@@ -40,7 +40,7 @@ export default function Dashboard() {
     try {
       const outputsResult = await runSpecGenerator(idea, refinements);
       setOutputs(outputsResult);
-      addTraceEntry({ action: 'generate', inputs: { idea, refinements }, outputs: outputsResult });
+      addTraceEntry({ action: 'generate', inputs: { idea, refinements }, outputs: outputsResult as unknown as Record<string, unknown> });
     } catch (error) {
       console.error('Generation failed:', error);
     } finally {
