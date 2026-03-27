@@ -36,9 +36,9 @@ export default function LeftPanel() {
       <textarea
         value={idea}
         onChange={(e) => setIdea(e.target.value)}
-        placeholder="Describe your app idea here...
+        placeholder={`Describe your app idea here...
 
-Example: A habit tracker for remote workers with team challenges, social accountability, and progress visualization"
+Example: A habit tracker for remote workers with team challenges, social accountability, and progress visualization`}
         className="w-full h-40 p-4 text-sm border border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
       />
       
