@@ -20,13 +20,13 @@ export default function RightPreview() {
 
   const outputMap: Record<string, string> = outputs
     ? {
-        masterPrompt: outputs.masterPrompt,
-        prd: outputs.prd,
-        plan: outputs.plan,
-        tasks: outputs.tasks,
-        agentInstructions: outputs.agentInstructions,
-        userInstructions: outputs.userInstructions,
-      }
+      masterPrompt: outputs.masterPrompt,
+      prd: outputs.prd,
+      plan: outputs.plan,
+      tasks: outputs.tasks,
+      agentInstructions: outputs.agentInstructions,
+      userInstructions: outputs.userInstructions,
+    }
     : {};
 
   const handleCopy = async () => {
@@ -49,7 +49,7 @@ export default function RightPreview() {
             <FileText className="w-8 h-8 text-zinc-400" />
           </div>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center max-w-xs">
-            No outputs generated yet. Enter your idea and click "Analyze Idea" to start.
+            No outputs generated yet. Enter your idea and click &quot;Analyze Idea&quot; to start.
           </p>
         </div>
       </div>
@@ -74,11 +74,10 @@ export default function RightPreview() {
           <button
             key={tab.id}
             onClick={() => setActiveOutput(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
-              activeOutput === tab.id
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${activeOutput === tab.id
                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                 : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-            }`}
+              }`}
           >
             <tab.icon className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{tab.label}</span>
