@@ -1,19 +1,37 @@
 'use client';
 
 import { useAppStore } from '@/lib/store';
+import { Check, Code, Users, Settings, Palette } from 'lucide-react';
 
 interface CenterTabsProps {
   activeTab: 'refine' | 'settings';
   setActiveTab: (tab: 'refine' | 'settings') => void;
 }
 
-const TECH_OPTIONS = ['Next.js', 'React', 'Vue', 'Svelte', 'Node.js', 'Python', 'TypeScript', 'Go'];
-const COMPLEXITY_OPTIONS = [
-  { value: 'simple', label: 'Simple', description: 'MVP, basic features' },
-  { value: 'medium', label: 'Medium', description: 'Core features, some complexity' },
-  { value: 'advanced', label: 'Advanced', description: 'Full-featured, production-ready' },
+const TECH_OPTIONS = [
+  { value: 'Next.js', icon: '⚡' },
+  { value: 'React', icon: '⚛️' },
+  { value: 'Vue', icon: '💚' },
+  { value: 'Svelte', icon: '🔥' },
+  { value: 'Node.js', icon: '🟢' },
+  { value: 'Python', icon: '🐍' },
+  { value: 'TypeScript', icon: '📘' },
+  { value: 'Go', icon: '🐹' },
 ];
-const AUDIENCE_OPTIONS = ['Beginner makers', 'Non-technical entrepreneurs', 'Junior devs', 'Small teams', 'Enterprises'];
+
+const COMPLEXITY_OPTIONS = [
+  { value: 'simple', label: 'Simple MVP', description: 'Basic features, single user, quick launch' },
+  { value: 'medium', label: 'Medium', description: 'Core features, user accounts, database' },
+  { value: 'advanced', label: 'Advanced', description: 'Full-featured, auth, payments, scaling' },
+];
+
+const AUDIENCE_OPTIONS = [
+  'Beginner makers',
+  'Non-technical entrepreneurs',
+  'Junior devs',
+  'Small teams',
+  'Enterprises',
+];
 
 export default function CenterTabs({ activeTab, setActiveTab }: CenterTabsProps) {
   const { refinements, setRefinements } = useAppStore();
@@ -31,82 +49,104 @@ export default function CenterTabs({ activeTab, setActiveTab }: CenterTabsProps)
   };
 
   return (
-    <div className="w-1/3 p-4 border-r dark:border-zinc-800 overflow-y-auto">
-      <div className="flex border-b dark:border-zinc-700 mb-4">
+    <div className="w-full lg:w-1/3 h-full p-4 lg:p-6 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto bg-white dark:bg-zinc-900">
+      <div className="flex border-b border-zinc-200 dark:border-zinc-700 mb-6">
         <button
           onClick={() => setActiveTab('refine')}
-          className={`px-4 py-2 text-sm font-medium ${
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'refine'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-zinc-600 dark:text-zinc-400'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
           }`}
         >
+          <Code className="w-4 h-4" />
           Refine
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-4 py-2 text-sm font-medium ${
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
             activeTab === 'settings'
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-zinc-600 dark:text-zinc-400'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600'
+              : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
           }`}
         >
+          <Settings className="w-4 h-4" />
           Settings
         </button>
       </div>
 
       {activeTab === 'refine' ? (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
-            <h3 className="text-sm font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Tech Stack</h3>
-            <div className="flex flex-wrap gap-2">
+            <h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 text-xs">T</span>
+              Tech Stack
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
               {TECH_OPTIONS.map((tech) => (
                 <button
-                  key={tech}
-                  onClick={() => toggleTechStack(tech)}
-                  className={`px-3 py-1 text-sm rounded-full border ${
-                    refinements.techStack.includes(tech)
-                      ? 'bg-blue-100 border-blue-600 text-blue-700 dark:bg-blue-900 dark:border-blue-400 dark:text-blue-300'
-                      : 'bg-white border-zinc-300 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-300'
+                  key={tech.value}
+                  onClick={() => toggleTechStack(tech.value)}
+                  className={`flex items-center gap-2 p-3 text-sm rounded-xl border transition-all ${
+                    refinements.techStack.includes(tech.value)
+                      ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300 shadow-sm'
+                      : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
                   }`}
                 >
-                  {tech}
+                  <span>{tech.icon}</span>
+                  <span className="font-medium">{tech.value}</span>
+                  {refinements.techStack.includes(tech.value) && (
+                    <Check className="w-4 h-4 ml-auto text-purple-600 dark:text-purple-400" />
+                  )}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Complexity</h3>
+            <h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 text-xs">C</span>
+              Complexity Level
+            </h3>
             <div className="space-y-2">
               {COMPLEXITY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setRefinements({ complexity: opt.value as 'simple' | 'medium' | 'advanced' })}
-                  className={`w-full p-3 text-left rounded-lg border ${
+                  className={`w-full p-4 text-left rounded-xl border transition-all ${
                     refinements.complexity === opt.value
-                      ? 'bg-blue-50 border-blue-600 dark:bg-blue-900/50 dark:border-blue-400'
-                      : 'bg-white border-zinc-300 dark:bg-zinc-800 dark:border-zinc-600'
+                      ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-500 shadow-sm'
+                      : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
                   }`}
                 >
-                  <div className="font-medium text-sm text-zinc-900 dark:text-zinc-50">{opt.label}</div>
-                  <div className="text-xs text-zinc-500 dark:text-zinc-400">{opt.description}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm text-zinc-900 dark:text-zinc-50">{opt.label}</span>
+                    {refinements.complexity === opt.value && (
+                      <Check className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{opt.description}</p>
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold mb-2 text-zinc-900 dark:text-zinc-50">Target Audience</h3>
+            <h3 className="text-sm font-semibold mb-3 text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xs">
+                <Users className="w-3 h-3" />
+              </span>
+              Target Audience
+            </h3>
             <div className="flex flex-wrap gap-2">
               {AUDIENCE_OPTIONS.map((audience) => (
                 <button
                   key={audience}
                   onClick={() => toggleAudience(audience)}
-                  className={`px-3 py-1 text-sm rounded-full border ${
+                  className={`px-3 py-2 text-sm rounded-full border transition-all ${
                     refinements.targetAudience.includes(audience)
-                      ? 'bg-purple-100 border-purple-600 text-purple-700 dark:bg-purple-900 dark:border-purple-400 dark:text-purple-300'
-                      : 'bg-white border-zinc-300 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-300'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/50 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
                   }`}
                 >
                   {audience}
@@ -116,8 +156,21 @@ export default function CenterTabs({ activeTab, setActiveTab }: CenterTabsProps)
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">Settings panel coming soon...</p>
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+            <div className="flex items-center gap-3 mb-3">
+              <Palette className="w-5 h-5 text-zinc-500" />
+              <span className="font-medium text-sm text-zinc-700 dark:text-zinc-300">Appearance</span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">Dark mode and custom themes coming soon</p>
+          </div>
+          <div className="p-4 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+            <div className="flex items-center gap-3 mb-3">
+              <Settings className="w-5 h-5 text-zinc-500" />
+              <span className="font-medium text-sm text-zinc-700 dark:text-zinc-300">Advanced Settings</span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">API configuration and preferences coming in T06</p>
+          </div>
         </div>
       )}
     </div>
