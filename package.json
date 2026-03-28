@@ -13,6 +13,8 @@
     "@trpc/client": "^11.15.1",
     "@trpc/react-query": "^11.15.1",
     "@trpc/server": "^11.15.1",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "langchain": "^1.2.37",
     "langchain-core": "^0.0.4",
     "litellm": "^0.12.0",

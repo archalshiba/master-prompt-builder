@@ -2,31 +2,33 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { FileText, Download, Copy, Check, BookOpen, ListTodo, Code2, Bot, UserCheck } from 'lucide-react';
+import { FileText, Download, Copy, Check, BookOpen, ListTodo, Code2, Bot, UserCheck, Loader2, Archive } from 'lucide-react';
+import JSZip from 'jszip';
 
 const OUTPUT_TABS = [
-  { id: 'masterPrompt', label: 'Master Prompt', icon: Code2, color: 'blue' },
-  { id: 'prd', label: 'PRD', icon: BookOpen, color: 'purple' },
-  { id: 'plan', label: 'Plan', icon: ListTodo, color: 'amber' },
-  { id: 'tasks', label: 'Tasks', icon: ListTodo, color: 'emerald' },
-  { id: 'agentInstructions', label: 'Agent Instructions', icon: Bot, color: 'rose' },
-  { id: 'userInstructions', label: 'User Instructions', icon: UserCheck, color: 'cyan' },
+  { id: 'masterPrompt', label: 'Master Prompt', icon: Code2, color: 'blue', filename: 'master_prompt.md' },
+  { id: 'prd', label: 'PRD', icon: BookOpen, color: 'purple', filename: 'PRD.md' },
+  { id: 'plan', label: 'Plan', icon: ListTodo, color: 'amber', filename: 'plan.md' },
+  { id: 'tasks', label: 'Tasks', icon: ListTodo, color: 'emerald', filename: 'tasks.yaml' },
+  { id: 'agentInstructions', label: 'Agent', icon: Bot, color: 'rose', filename: 'agent_instructions.md' },
+  { id: 'userInstructions', label: 'User', icon: UserCheck, color: 'cyan', filename: 'user_instructions.md' },
 ];
 
 export default function RightPreview() {
-  const { outputs } = useAppStore();
+  const { outputs, idea } = useAppStore();
   const [activeOutput, setActiveOutput] = useState('masterPrompt');
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const outputMap: Record<string, string> = outputs
     ? {
-      masterPrompt: outputs.masterPrompt,
-      prd: outputs.prd,
-      plan: outputs.plan,
-      tasks: outputs.tasks,
-      agentInstructions: outputs.agentInstructions,
-      userInstructions: outputs.userInstructions,
-    }
+        masterPrompt: outputs.masterPrompt,
+        prd: outputs.prd,
+        plan: outputs.plan,
+        tasks: outputs.tasks,
+        agentInstructions: outputs.agentInstructions,
+        userInstructions: outputs.userInstructions,
+      }
     : {};
 
   const handleCopy = async () => {
@@ -34,6 +36,42 @@ export default function RightPreview() {
       await navigator.clipboard.writeText(outputMap[activeOutput]);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!outputs) return;
+    
+    setExporting(true);
+    try {
+      const zip = new JSZip();
+      
+      zip.file('master_prompt.md', outputs.masterPrompt);
+      zip.file('PRD.md', outputs.prd);
+      zip.file('plan.md', outputs.plan);
+      zip.file('tasks.yaml', outputs.tasks);
+      zip.file('agent_instructions.md', outputs.agentInstructions);
+      zip.file('user_instructions.md', outputs.userInstructions);
+      
+      const sanitizedIdea = idea
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 50) || 'project';
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sanitizedIdea}-prompt-package.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -63,9 +101,22 @@ export default function RightPreview() {
           <FileText className="w-5 h-5 text-zinc-500" />
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Outputs</h2>
         </div>
-        <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Export</span>
+        <button
+          onClick={handleExport}
+          disabled={exporting || !outputs}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {exporting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="hidden sm:inline">Exporting...</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -74,23 +125,29 @@ export default function RightPreview() {
           <button
             key={tab.id}
             onClick={() => setActiveOutput(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${activeOutput === tab.id
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+              activeOutput === tab.id
                 ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
                 : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-              }`}
+            }`}
           >
             <tab.icon className="w-3.5 h-3.5" />
             <span className="hidden md:inline">{tab.label}</span>
-            <span className="md:hidden">{tab.label.split(' ')[0]}</span>
+            <span className="md:hidden">{tab.label}</span>
           </button>
         ))}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {outputMap[activeOutput]?.length || 0} chars
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {outputMap[activeOutput]?.length || 0} chars
+            </span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {OUTPUT_TABS.find(t => t.id === activeOutput)?.filename}
+            </span>
+          </div>
           <button
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
@@ -98,7 +155,7 @@ export default function RightPreview() {
             {copied ? (
               <>
                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                Copied!
+                <span className="text-emerald-600">Copied!</span>
               </>
             ) : (
               <>
@@ -108,9 +165,16 @@ export default function RightPreview() {
             )}
           </button>
         </div>
-        <pre className="p-4 text-sm font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed overflow-x-auto">
+        <pre className="p-4 text-sm font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed overflow-x-auto max-h-[calc(100vh-400px)]">
           {outputMap[activeOutput] || 'No content'}
         </pre>
+      </div>
+
+      <div className="px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <Archive className="w-4 h-4" />
+          <span>Package includes {OUTPUT_TABS.length} files ready for download</span>
+        </div>
       </div>
     </div>
   );

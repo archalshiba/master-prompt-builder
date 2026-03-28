@@ -60,6 +60,7 @@ export const appRouter = router({
 
   export: publicProcedure
     .input(z.object({
+      idea: z.string(),
       outputs: z.object({
         masterPrompt: z.string(),
         prd: z.string(),
@@ -69,10 +70,26 @@ export const appRouter = router({
         userInstructions: z.string(),
       }),
     }))
-    .mutation(async () => {
+    .mutation(async ({ input }) => {
+      const fileMap: Record<string, string> = {
+        'master_prompt.md': input.outputs.masterPrompt,
+        'PRD.md': input.outputs.prd,
+        'plan.md': input.outputs.plan,
+        'tasks.yaml': input.outputs.tasks,
+        'agent_instructions.md': input.outputs.agentInstructions,
+        'user_instructions.md': input.outputs.userInstructions,
+      };
+
+      const sanitizedIdea = input.idea
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 50);
+
       return { 
         success: true, 
-        message: 'Package ready for download',
+        files: fileMap,
+        filename: `${sanitizedIdea || 'project'}-prompt-package.zip`,
       };
     }),
 });
