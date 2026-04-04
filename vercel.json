@@ -5,8 +5,8 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "GEMINI_API_KEY": "@gemini_api_key"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://pzbkxcyfzryqcecsrwfr.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6Ymt4Y3lmenJ5cWNlY3Nyd2ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzYzNzIsImV4cCI6MjA5MDgxMjM3Mn0.VlHMOoWGS6WscR4zelJ5nRLFyMg5xbmRpn2fiaPbPp0",
+    "GEMINI_API_KEY": "AIzaSyBJSAwl2Yb0NdeLtVavkxiNfJur_S5dmKc"
   }
 }
