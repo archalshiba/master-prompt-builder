@@ -1,26 +1,13 @@
 import { CritiqueItem, RefinementOption, GeneratedOutputs } from './store';
 import { CRITIC_PROMPT, REFINER_PROMPT, SPEC_GENERATOR_PROMPT, REVIEWER_PROMPT } from './prompts/agent-prompts';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-1.5-flash';
-
-export interface LLMConfig {
-  provider: 'gemini' | 'claude';
-  apiKey?: string;
-  model?: string;
-}
-
-export const llmConfig: LLMConfig = {
-  provider: 'gemini',
-  apiKey: GEMINI_API_KEY,
-  model: GEMINI_MODEL,
-};
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 async function callGemini(prompt: string): Promise<string> {
-  const apiKey = GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured. Please add to .env.local');
+    throw new Error('GEMINI_API_KEY not configured. Please add to Vercel environment variables.');
   }
 
   const response = await fetch(
@@ -41,12 +28,19 @@ async function callGemini(prompt: string): Promise<string> {
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${error}`);
+    const errorText = await response.text();
+    console.error('Gemini API error:', response.status, errorText);
+    throw new Error(`Gemini API error: ${response.status}`);
   }
 
   const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  
+  if (!text) {
+    throw new Error('Empty response from Gemini API');
+  }
+  
+  return text;
 }
 
 function parseJSONResponse<T>(text: string): T {
@@ -60,9 +54,7 @@ function parseJSONResponse<T>(text: string): T {
 export async function runCriticAgent(idea: string): Promise<CritiqueItem[]> {
   const prompt = CRITIC_PROMPT.replace('{idea}', idea);
   
-  const useMock = !GEMINI_API_KEY;
-  
-  if (useMock) {
+  if (!process.env.GEMINI_API_KEY) {
     await new Promise((r) => setTimeout(r, 500));
     return [
       { id: 'comp-1', type: 'competitor', title: 'Product A', description: 'Market leader with strong brand recognition. Consider focusing on a different segment or unique angle.' },
@@ -91,9 +83,7 @@ export async function runRefinerAgent(
     .replace('{idea}', idea)
     .replace('{critique}', JSON.stringify(critique, null, 2));
     
-  const useMock = !GEMINI_API_KEY;
-  
-  if (useMock) {
+  if (!process.env.GEMINI_API_KEY) {
     await new Promise((r) => setTimeout(r, 300));
     return {
       techStack: ['Next.js', 'TypeScript', 'Tailwind'],
@@ -123,9 +113,7 @@ export async function runSpecGenerator(
     .replace('{targetAudience}', refinements.targetAudience.join(', '))
     .replace('{niche}', refinements.niche);
     
-  const useMock = !GEMINI_API_KEY;
-  
-  if (useMock) {
+  if (!process.env.GEMINI_API_KEY) {
     await new Promise((r) => setTimeout(r, 800));
     return {
       masterPrompt: `# Master Prompt: ${idea}\n\n## Overview\nBuild a modern web application using ${refinements.techStack.join(', ')}.\n\n## Requirements\n- Complexity: ${refinements.complexity}\n- Target: ${refinements.targetAudience.join(', ')}`,
@@ -149,9 +137,7 @@ export async function runSpecGenerator(
 export async function runReviewerAgent(outputs: GeneratedOutputs): Promise<{issues: Array<{type: string; severity: string; message: string}>; score: number; recommendations: string[]}> {
   const prompt = REVIEWER_PROMPT.replace('{outputs}', JSON.stringify(outputs, null, 2));
   
-  const useMock = !GEMINI_API_KEY;
-  
-  if (useMock) {
+  if (!process.env.GEMINI_API_KEY) {
     await new Promise((r) => setTimeout(r, 400));
     return {
       issues: [],
