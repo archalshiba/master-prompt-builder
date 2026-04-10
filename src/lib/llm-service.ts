@@ -3,44 +3,80 @@ import { CRITIC_PROMPT, REFINER_PROMPT, SPEC_GENERATOR_PROMPT, REVIEWER_PROMPT }
 
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
-async function callGemini(prompt: string): Promise<string> {
+const MIN_REQUEST_INTERVAL = 2000;
+let lastRequestTime = 0;
+
+async function waitForRateLimit(): Promise<void> {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    await new Promise((resolve) => setTimeout(resolve, waitTime));
+  }
+  
+  lastRequestTime = Date.now();
+}
+
+async function callGeminiWithRetry(prompt: string, retries = 2): Promise<string> {
+  await waitForRateLimit();
+  
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY not configured. Please add to Vercel environment variables.');
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 8192,
-        },
-      }),
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 8192,
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        
+        if (response.status === 429 && attempt < retries) {
+          const waitTime = Math.pow(2, attempt) * 3000;
+          console.log(`Rate limited. Waiting ${waitTime}ms before retry...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          continue;
+        }
+        
+        console.error('Gemini API error:', response.status, errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      if (!text) {
+        throw new Error('Empty response from Gemini API');
+      }
+      
+      return text;
+    } catch (error) {
+      if (attempt === retries) throw error;
+      const waitTime = Math.pow(2, attempt) * 2000;
+      console.log(`Error occurred. Waiting ${waitTime}ms before retry...`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Gemini API error:', response.status, errorText);
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  
-  if (!text) {
-    throw new Error('Empty response from Gemini API');
   }
   
-  return text;
+  throw new Error('Max retries reached');
 }
 
 function parseJSONResponse<T>(text: string): T {
@@ -67,7 +103,7 @@ export async function runCriticAgent(idea: string): Promise<CritiqueItem[]> {
   }
 
   try {
-    const response = await callGemini(prompt);
+    const response = await callGeminiWithRetry(prompt);
     return parseJSONResponse<CritiqueItem[]>(response);
   } catch (error) {
     console.error('Critic agent failed:', error);
@@ -94,7 +130,7 @@ export async function runRefinerAgent(
   }
 
   try {
-    const response = await callGemini(prompt);
+    const response = await callGeminiWithRetry(prompt);
     return parseJSONResponse<Partial<RefinementOption>>(response);
   } catch (error) {
     console.error('Refiner agent failed:', error);
@@ -126,7 +162,7 @@ export async function runSpecGenerator(
   }
 
   try {
-    const response = await callGemini(prompt);
+    const response = await callGeminiWithRetry(prompt);
     return parseJSONResponse<GeneratedOutputs>(response);
   } catch (error) {
     console.error('Spec generator failed:', error);
@@ -150,7 +186,7 @@ export async function runReviewerAgent(outputs: GeneratedOutputs): Promise<{issu
   }
 
   try {
-    const response = await callGemini(prompt);
+    const response = await callGeminiWithRetry(prompt);
     return parseJSONResponse(response);
   } catch (error) {
     console.error('Reviewer agent failed:', error);
