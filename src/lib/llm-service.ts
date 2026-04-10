@@ -3,8 +3,22 @@ import { CRITIC_PROMPT, REFINER_PROMPT, SPEC_GENERATOR_PROMPT, REVIEWER_PROMPT }
 
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
-const MIN_REQUEST_INTERVAL = 2000;
+const MIN_REQUEST_INTERVAL = 3000;
 let lastRequestTime = 0;
+
+export class RateLimitError extends Error {
+  constructor(message: string = 'API rate limit reached. Please wait a few seconds and try again.') {
+    super(message);
+    this.name = 'RateLimitError';
+  }
+}
+
+export class APIError extends Error {
+  constructor(message: string, public statusCode?: number) {
+    super(message);
+    this.name = 'APIError';
+  }
+}
 
 async function waitForRateLimit(): Promise<void> {
   const now = Date.now();
@@ -18,13 +32,13 @@ async function waitForRateLimit(): Promise<void> {
   lastRequestTime = Date.now();
 }
 
-async function callGeminiWithRetry(prompt: string, retries = 2): Promise<string> {
+async function callGeminiWithRetry(prompt: string, retries = 3): Promise<string> {
   await waitForRateLimit();
   
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not configured. Please add to Vercel environment variables.');
+    throw new APIError('Gemini API key is not configured. Please add GEMINI_API_KEY to your environment variables.');
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -49,34 +63,59 @@ async function callGeminiWithRetry(prompt: string, retries = 2): Promise<string>
       if (!response.ok) {
         const errorText = await response.text();
         
-        if (response.status === 429 && attempt < retries) {
-          const waitTime = Math.pow(2, attempt) * 3000;
-          console.log(`Rate limited. Waiting ${waitTime}ms before retry...`);
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
-          continue;
+        if (response.status === 429) {
+          if (attempt < retries) {
+            const waitTime = Math.pow(2, attempt) * 5000;
+            console.log(`Rate limited. Waiting ${waitTime}ms before retry...`);
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            continue;
+          }
+          throw new RateLimitError();
         }
         
-        console.error('Gemini API error:', response.status, errorText);
-        throw new Error(`Gemini API error: ${response.status}`);
+        if (response.status === 400) {
+          throw new APIError('Invalid request. Please check your input and try again.', 400);
+        }
+        
+        if (response.status === 401 || response.status === 403) {
+          throw new APIError('API authentication failed. Please check your Gemini API key.', response.status);
+        }
+        
+        if (response.status >= 500) {
+          if (attempt < retries) {
+            const waitTime = Math.pow(2, attempt) * 3000;
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            continue;
+          }
+          throw new APIError('Gemini service is temporarily unavailable. Please try again in a few moments.', response.status);
+        }
+        
+        throw new APIError(`API error: ${response.status}`, response.status);
       }
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
       if (!text) {
-        throw new Error('Empty response from Gemini API');
+        throw new APIError('Received empty response from Gemini. Please try again.');
       }
       
       return text;
     } catch (error) {
-      if (attempt === retries) throw error;
+      if (error instanceof RateLimitError || error instanceof APIError) {
+        throw error;
+      }
+      
+      if (attempt === retries) {
+        throw new APIError('Network error. Please check your connection and try again.');
+      }
+      
       const waitTime = Math.pow(2, attempt) * 2000;
-      console.log(`Error occurred. Waiting ${waitTime}ms before retry...`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
   
-  throw new Error('Max retries reached');
+  throw new APIError('Maximum retries reached. Please try again later.');
 }
 
 function parseJSONResponse<T>(text: string): T {

@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface ToastMessage {
+  id: string;
+  type: 'error' | 'success' | 'info' | 'warning';
+  title: string;
+  message: string;
+}
+
 export interface CritiqueItem {
   id: string;
   type: 'competitor' | 'risk' | 'strength';
@@ -48,6 +55,7 @@ interface AppState {
   versions: AppVersion[];
   isLoading: boolean;
   language: 'en' | 'ar';
+  toasts: ToastMessage[];
   
   setIdea: (idea: string) => void;
   setCritique: (critique: CritiqueItem[]) => void;
@@ -59,6 +67,8 @@ interface AppState {
   loadVersion: (id: string) => void;
   setLanguage: (lang: 'en' | 'ar') => void;
   reset: () => void;
+  addToast: (toast: Omit<ToastMessage, 'id'>) => void;
+  removeToast: (id: string) => void;
 }
 
 const initialRefinements: RefinementOption = {
@@ -79,6 +89,7 @@ export const useAppStore = create<AppState>()(
       versions: [],
       isLoading: false,
       language: 'en',
+      toasts: [],
 
       setIdea: (idea) => set({ idea }),
       setCritique: (critique) => set({ critique }),
@@ -130,6 +141,17 @@ export const useAppStore = create<AppState>()(
           trace: [],
           isLoading: false,
         }),
+      addToast: (toast) =>
+        set((state) => ({
+          toasts: [
+            ...state.toasts,
+            { ...toast, id: `toast-${Date.now()}-${Math.random().toString(36).slice(2)}` },
+          ],
+        })),
+      removeToast: (id) =>
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        })),
     }),
     {
       name: 'master-prompt-builder-storage',
